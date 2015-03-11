@@ -1,4 +1,5 @@
 class Deck
+  attr_reader :playing_deck
   SUITS = ["Hearts","Spades","Clubs","Diamonds"]
   CARD_VALUE = [2,3,4,5,6,7,8,9,10,"A","J","Q","K"]
 
@@ -13,13 +14,13 @@ class Deck
   end 
 
   def deal_card
-    @playing_deck.pop
+    playing_deck.pop
   end
 
   private
 
   def shuffle_deck!
-    3.times{ @playing_deck.shuffle!}
+    3.times{ playing_deck.shuffle!}
   end
 
 end
@@ -48,10 +49,11 @@ class Card
 end
 
 module Handable
+  BLACKJACK = 21
   def total_sum
     total = 0
     aces = 0
-    @hand.each do |card|
+    self.hand.each do |card|
       if card.face_value == "A"
         aces += 1
         total += 1
@@ -61,27 +63,27 @@ module Handable
         total += card.face_value
       end
     end
-    if aces > 0 && total + 10 <= 21
+    if aces > 0 && total + 10 <= BLACKJACK
       total += 10
     end
     total
   end
 
   def add_card(card)
-    @hand << card
+    hand << card
   end
 
   def is_busted?
-    total_sum > 21
+    total_sum > BLACKJACK
   end
 
   def win?
-    total_sum == 21
+    total_sum == BLACKJACK
   end
 
   def show_full_hand
     puts "---#{name}´s hand---"
-    @hand.each do |card|
+    self.hand.each do |card|
       card.draw_card
     end
     puts "The total sum of #{name} is #{total_sum}"
@@ -92,9 +94,10 @@ end
 class Player
   include Handable
   attr_reader :name
+  attr_accessor :hand
 
-  def initialize
-    @name = ask_for_name
+  def initialize(name)
+    @name = name
     @hand = []
   end
 
@@ -102,22 +105,12 @@ class Player
     show_full_hand
   end
 
-  private
-  
-  def ask_for_name
-    begin
-      system('clear')
-      puts "What´s your name"
-      name = gets.chomp.capitalize
-    end until name.size > 0
-    name
-  end
-
 end
 
 class Dealer
   include Handable
   attr_reader :name
+  attr_accessor :hand
 
   def initialize
     @name = "Dealer"
@@ -141,12 +134,12 @@ class Game
 
   def initialize
     @deck = Deck.new
-    @player = Player.new
+    @player = Player.new(ask_for_name)
     @dealer = Dealer.new
   end
 
   def play
-    give_first_hand
+    deal_initial_hands
     system('clear')
     show_both_hands_dealer_hidden
     player_plays
@@ -156,7 +149,7 @@ class Game
 
   private
 
-  def give_first_hand
+  def deal_initial_hands
     player.add_card(deck.deal_card)
     player.add_card(deck.deal_card)
     dealer.add_card(deck.deal_card)
@@ -223,7 +216,7 @@ class Game
       show_both_hands
       exit
     end
-    while !dealer.has_17_or_more? do
+    until dealer.has_17_or_more? do
       dealer.add_card(deck.deal_card)
     end
     show_both_hands
@@ -244,6 +237,15 @@ class Game
     else
       puts "It´s a Tie!!"
     end
+  end
+
+  def ask_for_name
+    begin
+      system('clear')
+      puts "What´s your name"
+      name = gets.chomp.capitalize
+    end until name.size > 0
+    name
   end
 end
 Game.new.play
